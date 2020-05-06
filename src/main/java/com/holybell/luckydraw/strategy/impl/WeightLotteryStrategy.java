@@ -6,7 +6,9 @@ import com.holybell.luckydraw.strategy.LotteryStrategy;
 import java.util.*;
 
 /**
- * 本策略先确定抽奖的员工，然后根据权重获取奖项
+ * 权重抽奖策略
+ * <p>
+ * 抽奖逻辑：先随机抽取获奖员工，然后根据权重抽取奖项，如果奖项已经没有了，则重新抽取员工继续抽奖，类似中秋博饼逻辑
  */
 public class WeightLotteryStrategy implements LotteryStrategy {
 
@@ -15,7 +17,6 @@ public class WeightLotteryStrategy implements LotteryStrategy {
     public WeightLotteryStrategy(double[] prizeWeight) {
         this.prizeWeight = prizeWeight;
     }
-
 
     @Override
     public List<List<Integer>> doLottery(int employeeNumber, int[] prizeConfiguration) {
@@ -38,14 +39,13 @@ public class WeightLotteryStrategy implements LotteryStrategy {
         }
 
         while (prizeCount != 0) {
-
-            int employeeNo = new Random().nextInt(employeeNumber);  // 员工编号
-            if (!employeeWhoHadWonLotterySet.contains(employeeNo)) {  // 当前员工并未中奖过
-                int prizeNo = getPrize();
+            int employeeNo = new Random().nextInt(employeeNumber);      // 随机抽取员工
+            if (!employeeWhoHadWonLotterySet.contains(employeeNo)) {    // 当前员工并未中奖过
+                int prizeNo = getPrize();                               // 根据权重抽取奖品
                 if (prizeThatHadBeenWonMap.getOrDefault(prizeNo, 0) < prizeConfiguration[prizeNo]) {    // 当前奖项仍有剩余
                     employeeWhoHadWonLotterySet.add(employeeNo);
                     prizeThatHadBeenWonMap.put(prizeNo, prizeThatHadBeenWonMap.getOrDefault(prizeNo, 0) + 1);
-                    resultList.get(prizeNo).add(employeeNo);        // 记录抽奖结果
+                    resultList.get(prizeNo).add(employeeNo);            // 记录抽奖结果
                     prizeCount--;
                 }
             }
@@ -53,6 +53,11 @@ public class WeightLotteryStrategy implements LotteryStrategy {
         return resultList;
     }
 
+    /**
+     * 根据权重抽取奖品
+     *
+     * @return 几等奖
+     */
     private int getPrize() {
         int random = -1;
 

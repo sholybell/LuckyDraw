@@ -62,6 +62,7 @@ public class LuckyDraw {
             throw new LuckyDrawException("请设置抽奖策略!");
         }
 
+        // 执行抽奖逻辑
         return lotteryStrategy.doLottery(employeeNumber, prizeConfiguration);
     }
 }

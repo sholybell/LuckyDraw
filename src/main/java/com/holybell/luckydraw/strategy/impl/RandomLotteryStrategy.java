@@ -5,7 +5,9 @@ import com.holybell.luckydraw.strategy.LotteryStrategy;
 import java.util.*;
 
 /**
- * 本策略为先确定奖项，然后随机抽取员工获得本奖项
+ * 随机抽奖策略
+ * <p>
+ * 抽奖逻辑：先确定奖项，然后随机抽取该奖项的获奖员工
  */
 public class RandomLotteryStrategy implements LotteryStrategy {
 
