@@ -1,6 +1,7 @@
 package com.holybell.luckydraw.strategy.impl;
 
 import com.holybell.luckydraw.exception.LuckyDrawException;
+import com.holybell.luckydraw.strategy.BaseStrategy;
 import com.holybell.luckydraw.strategy.LotteryStrategy;
 
 import java.util.*;
@@ -8,9 +9,9 @@ import java.util.*;
 /**
  * 权重抽奖策略
  * <p>
- * 抽奖逻辑：先随机抽取获奖员工，然后根据权重抽取奖项，如果奖项已经没有了，则重新抽取员工继续抽奖，类似中秋博饼逻辑
+ * 抽奖逻辑：先随机抽取获奖员工，然后根据权重抽取奖项，如果奖项已经没有了，则将该奖品的权重设置为0，避免影响下一次抽奖结果
  */
-public class WeightLotteryStrategy implements LotteryStrategy {
+public class WeightLotteryStrategy extends BaseStrategy implements LotteryStrategy {
 
     private double[] prizeWeight;
 
@@ -25,9 +26,9 @@ public class WeightLotteryStrategy implements LotteryStrategy {
             throw new LuckyDrawException("奖项权重个数和奖项个数不一致!");
         }
 
-        List<List<Integer>> resultList = new ArrayList<>();             // 最终抽奖结果集合
+        double[] _prizeWeight = Arrays.copyOf(prizeWeight, prizeWeight.length);  // 使用一个临时变量保存奖项权重，避免反复测试的时候，权重重置为0导致的影响
 
-        Set<Integer> employeeWhoHadWonLotterySet = new HashSet<>();     // 缓存已经中奖的员工
+        List<List<Integer>> resultList = new ArrayList<>();             // 最终抽奖结果集合
         Map<Integer, Integer> prizeThatHadBeenWonMap = new HashMap<>();  // 记录每个奖项被抽中的个数
 
         int prizeCount = 0; // 奖项总个数
@@ -35,18 +36,21 @@ public class WeightLotteryStrategy implements LotteryStrategy {
         // 事先生成抽奖结果List集合
         for (int prizeNum : prizeConfiguration) {
             resultList.add(new ArrayList<>(prizeNum));
-            prizeCount += prizeNum;
+            prizeCount += prizeNum;                                         // 累加奖品总数
         }
 
+        List<Integer> employeeNolist = shuffle(employeeNumber);             // 随机打散员工编号
+
         while (prizeCount != 0) {
-            int employeeNo = new Random().nextInt(employeeNumber);      // 随机抽取员工
-            if (!employeeWhoHadWonLotterySet.contains(employeeNo)) {    // 当前员工并未中奖过
-                int prizeNo = getPrize();                               // 根据权重抽取奖品
-                if (prizeThatHadBeenWonMap.getOrDefault(prizeNo, 0) < prizeConfiguration[prizeNo]) {    // 当前奖项仍有剩余
-                    employeeWhoHadWonLotterySet.add(employeeNo);
-                    prizeThatHadBeenWonMap.put(prizeNo, prizeThatHadBeenWonMap.getOrDefault(prizeNo, 0) + 1);
-                    resultList.get(prizeNo).add(employeeNo);            // 记录抽奖结果
-                    prizeCount--;
+            int employeeNo = employeeNolist.remove(0);                // 获取列表中第一个员工编号
+            int prizeNo = getPrize(_prizeWeight);                           // 根据权重抽取奖品
+            if (prizeThatHadBeenWonMap.getOrDefault(prizeNo, 0) < prizeConfiguration[prizeNo]) {    // 当前奖项仍有剩余
+                prizeThatHadBeenWonMap.put(prizeNo, prizeThatHadBeenWonMap.getOrDefault(prizeNo, 0) + 1);
+                resultList.get(prizeNo).add(employeeNo);                    // 记录抽奖结果
+                prizeCount--;
+
+                if (prizeThatHadBeenWonMap.getOrDefault(prizeNo, 0) == prizeConfiguration[prizeNo]) {
+                    _prizeWeight[prizeNo] = 0.0D;                            // 该奖项抽取完毕，将权重置为0
                 }
             }
         }
@@ -56,9 +60,10 @@ public class WeightLotteryStrategy implements LotteryStrategy {
     /**
      * 根据权重抽取奖品
      *
+     * @param prizeWeight 奖项权重
      * @return 几等奖
      */
-    private int getPrize() {
+    private int getPrize(double[] prizeWeight) {
         int random = -1;
 
         // 计算总权重

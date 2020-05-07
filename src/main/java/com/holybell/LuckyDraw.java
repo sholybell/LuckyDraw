@@ -65,4 +65,5 @@ public class LuckyDraw {
         // 执行抽奖逻辑
         return lotteryStrategy.doLottery(employeeNumber, prizeConfiguration);
     }
+
 }
